@@ -1,0 +1,6 @@
+*.parquet
+!DTR.parquet
+!D25.parquet
+db_playerids.csv
+values.csv
+ff_data.json
