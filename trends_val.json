@@ -1,0 +1,47 @@
+{
+ "seasons": "2021-2025",
+ "buy": {
+  "n": 85,
+  "early_ppg": 8.9,
+  "ros_ppg": 10.8,
+  "change": 1.88,
+  "improved_pct": 0.718
+ },
+ "sell": {
+  "n": 97,
+  "early_ppg": 17.8,
+  "ros_ppg": 14.0,
+  "change": -3.81,
+  "improved_pct": 0.165
+ },
+ "neutral": {
+  "n": 314,
+  "early_ppg": 10.6,
+  "ros_ppg": 10.1,
+  "change": -0.48,
+  "improved_pct": 0.439
+ },
+ "corr_xfp": 0.601,
+ "corr_fp": 0.601,
+ "risers": {
+  "n": 243,
+  "xfp_before": 7.6,
+  "xfp_recent": 13.7,
+  "xfp_after": 9.6,
+  "ppg_after_minus_ppg_wk1_6": -0.48
+ },
+ "fallers": {
+  "n": 211,
+  "xfp_before": 12.8,
+  "xfp_recent": 7.5,
+  "xfp_after": 10.2,
+  "ppg_after_minus_ppg_wk1_6": -0.38
+ },
+ "steady": {
+  "n": 140,
+  "xfp_before": 9.1,
+  "xfp_recent": 9.2,
+  "xfp_after": 9.2,
+  "ppg_after_minus_ppg_wk1_6": 0.02
+ }
+}

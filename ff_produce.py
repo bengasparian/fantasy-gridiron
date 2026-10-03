@@ -1,0 +1,129 @@
+import os,re,json,pickle,io,urllib.request,datetime
+src=open('ff_build2.py').read().split("DTR=build([2021,2022,2023,2024])")[0]; exec(src)
+from sklearn.linear_model import HuberRegressor
+B='https://github.com/nflverse/nflverse-data/releases/download/'
+def get(rel):
+    with urllib.request.urlopen(B+rel,timeout=180) as r_: return pd.read_parquet(io.BytesIO(r_.read()))
+if os.path.exists('DTR.parquet'): DTR=pd.read_parquet('DTR.parquet'); D25=pd.read_parquet('D25.parquet')
+else: DTR=build([2021,2022,2023,2024]); D25=build([2025]); DTR.to_parquet('DTR.parquet'); D25.to_parquet('D25.parquet')
+POSAVG={p:float(DTR[DTR.pos==p].y.mean()) for p in POS}
+def prep(d):
+    d=d.copy(); pa=d.pos.map(POSAVG); pv=d.prev.fillna(pa)
+    d['b']=np.where(d.g>0,(d.ppg.fillna(0)*d.g+pv*3)/(d.g+3),pv); d['bx']=np.where(d.g>0,(d.xpg.fillna(0)*d.g+pv*3)/(d.g+3),pv)
+    d['l3f']=d.l3.fillna(d.b); d['dv']=d.dvp.fillna(1.0)-1; d['iv']=d.it.fillna(22.5)/22.5-1; d['bd']=d.b*d.dv; d['bi']=d.b*d.iv; return d
+L=['b','bx','l3f','bd','bi']; FT=F+['b','bx']
+mk_lin=lambda:HuberRegressor(max_iter=500,epsilon=1.6); mk_tree=lambda:HGBR(max_iter=250,learning_rate=.04,max_leaf_nodes=15,min_samples_leaf=80,l2_regularization=2.0,random_state=0)
+res={}; CH={}; RNG={}
+for pos in POS:
+    a=prep(DTR[DTR.pos==pos]); t=prep(D25[D25.pos==pos])
+    pl=mk_lin().fit(a[L],a.y).predict(t[L]); pt=mk_tree().fit(a[FT],a.y).predict(t[FT]); pe=(pl+pt)/2
+    def sp(pred): return float(np.nanmean([spearmanr(x.pp,x.y).correlation for w,x in t.assign(pp=pred).groupby('week') if len(x)>8]))
+    cand={'blend':t.b.values,'linear':pl,'tree':pt,'ensemble':pe}; sc={k:(float(np.mean(np.abs(v-t.y))),sp(v)) for k,v in cand.items()}
+    best=min(['linear','tree','ensemble'],key=lambda k:sc[k][0]-2*sc[k][1])   # favor ranking accuracy (start/sit) as well as error
+    CH[pos]=best; res[pos]={'n':int(len(t)),'mae_base':r(sc['blend'][0]),'rank_base':r(sc['blend'][1],3),'mae':r(sc[best][0]),'rank':r(sc[best][1],3),'model':best}
+    q=t.assign(pp=cand[best]); q=q[q.pp>=5]; ratio=q.y/q.pp; RNG[pos]=[r(ratio.quantile(.1)),r(ratio.quantile(.9))]
+    print(pos,{k:(round(v[0],2),round(v[1],3)) for k,v in sc.items()},'->',best,flush=True)
+DA=prep(pd.concat([DTR,D25])); FIN={}
+for pos in POS:
+    a=DA[DA.pos==pos]; FIN[pos]=(mk_lin().fit(a[L],a.y),mk_tree().fit(a[FT],a.y))
+def predict(pos,d):
+    lin,tree=FIN[pos]; d=prep(d); pl=lin.predict(d[L]); pt=tree.predict(d[FT])
+    return np.maximum(0,{'linear':pl,'tree':pt,'ensemble':(pl+pt)/2}[CH[pos]])
+# ---------------- 2026 state
+S26=st[st.season==SEASON]; LAST=int(S26.week.max())
+wr=get(f'weekly_rosters/roster_weekly_{SEASON}.parquet'); wr=wr.dropna(subset=['gsis_id']).sort_values('week'); cur=wr.groupby('gsis_id').tail(1).set_index('gsis_id')
+dc=get(f'depth_charts/depth_charts_{SEASON}.parquet'); dc=dc[dc.dt==dc.dt.max()]
+inj=get(f'injuries/injuries_{SEASON}.parquet'); inj=inj[inj.report_status.isin(['Out','Doubtful','Questionable'])]; inj=inj[inj.week==inj.groupby('team').week.transform('max')]
+injs=inj.drop_duplicates('gsis_id',keep='last').set_index('gsis_id')
+injall=get(f'injuries/injuries_{SEASON}.parquet'); injall=injall[injall.week==injall.groupby('team').week.transform('max')]
+def short_prac(v):
+    v=str(v or ''); return 'DNP' if 'Did Not' in v else 'Limited' if 'Limited' in v else 'Full' if 'Full' in v else None
+PRAC={r.gsis_id:short_prac(r.practice_status) for r in injall.itertuples() if short_prac(r.practice_status)}
+P26=pd.read_parquet(f'pbp_{SEASON}.parquet',columns=['week','posteam','play_type','qb_kneel','qb_spike','epa']); P26=P26[P26.play_type.isin(['pass','run'])&(P26.qb_kneel!=1)&(P26.qb_spike!=1)]
+TV=P26.groupby(['posteam','week']).agg(pl=('epa','size'),pr=('play_type',lambda x:(x=='pass').mean())).groupby('posteam').mean()
+RMAP={'QB':'QB','RB':'RB','HB':'RB','FB':'RB','WR':'WR','LWR':'WR','RWR':'WR','SWR':'WR','TE':'TE'}
+dc2=dc[dc.pos_abb.isin(RMAP)].copy(); dc2['pg']=dc2.pos_abb.map(RMAP); role=dc2.sort_values('pos_rank').drop_duplicates('gsis_id').set_index('gsis_id')
+# pool: anyone with 2026 fantasy activity at QB/RB/WR/TE, plus depth-chart starters/backups
+pool=set(S26.player_id)|set(dc2[dc2.pos_rank<=(3)].gsis_id)
+info=st.sort_values(['season','week']).groupby('player_id').tail(1).set_index('player_id')
+idx=ids.dropna(subset=['gsis_id']).drop_duplicates('gsis_id').set_index('gsis_id')
+dv=pd.read_csv('values.csv'); dvm=dv.set_index('fp_id').value_1qb.to_dict()
+SC26=SC[SC.season==SEASON]; NEXT=int(SC26[SC26.pts.isna()].week.min()); byes={}   # current NFL week = earliest week with an unplayed game
+for t in SC26.team.unique():
+    wk=set(SC26[SC26.team==t].week); byes[t]=[w for w in range(1,19) if w not in wk]
+def team_of(pid):
+    if pid in cur.index and cur.loc[pid,'status'] in ('ACT','RES','INA','DEV'): return cur.loc[pid,'team'],cur.loc[pid,'status']
+    if pid in role.index: return role.loc[pid,'team'],'ACT'
+    return (info.loc[pid,'team'] if pid in info.index else None),None
+players=[]; prev_pg=prev
+for pid in pool:
+    tm,status=team_of(pid)
+    if tm is None: continue
+    pos=(info.loc[pid,'position'] if pid in info.index else (role.loc[pid,'pg'] if pid in role.index else None))
+    if pos not in POS: continue
+    name=(info.loc[pid,'player_display_name'] if pid in info.index else role.loc[pid,'player_name'])
+    rows=S26[S26.player_id==pid].sort_values('week')
+    base=feats(SEASON,99,rows,None); pv=prev_pg.get((pid,SEASON),np.nan)
+    sched=SC26[(SC26.team==tm)&SC26.pts.isna()].sort_values('week')   # this team's unplayed games
+    wk_rows=[]
+    for g in sched.itertuples():
+        f=dict(base); f.update(pos=pos,prev=pv,dvp=dvp_factor(SEASON,99,g.opp,pos),it=g.it,home=g.home); wk_rows.append((g.week,g.opp,g.home,g.it,f))
+    if not wk_rows: continue
+    FR=pd.DataFrame([w[4] for w in wk_rows]); P=predict(pos,FR)
+    Pm=predict(pos,FR.iloc[:1].assign(dvp=np.nan))[0]; Pv=predict(pos,FR.iloc[:1].assign(it=np.nan))[0]
+    out=injs.loc[pid,'report_status'] if pid in injs.index else None; ir=status=='RES'
+    nxt=wk_rows[0]; proj_next=float(P[0])
+    if out=='Out' or ir: proj_next=0.0
+    rec_pg=float(rows.receptions.mean()) if len(rows) else float(st[(st.player_id==pid)&(st.season==SEASON-1)].receptions.mean() or 0)
+    ros=[[int(w[0]),w[1],r(P[i],1)] for i,w in enumerate(wk_rows) if w[0]<=17]
+    rl=role.loc[pid] if pid in role.index else None
+    players.append({'id':pid,'n':name,'p':pos,'t':tm,'age':r(idx.loc[pid,'age'],1) if pid in idx.index and 'age' in idx.columns else None,
+      'role':f"{rl['pg']}{int(rl['pos_rank'])}" if rl is not None and rl['team']==tm else None,'inj':('IR' if ir else out),
+      'num':int(cur.loc[pid,'jersey_number']) if pid in cur.index and pd.notna(cur.loc[pid,'jersey_number']) else None,'g':int(len(rows)),'fp':r(rows.fp.sum(),1),'fpg':r(rows.fp.mean(),1) if len(rows) else None,'xfpg':r(rows.xfp.mean(),1) if len(rows) else None,
+      'snap':r(rows.offense_pct.mean(),3) if len(rows) and rows.offense_pct.notna().any() else None,'ts':r(rows.target_share.mean(),3) if len(rows) else None,
+      'ays':r(rows.air_yards_share.mean(),3) if len(rows) else None,'wopr':r(rows.wopr.mean(),3) if len(rows) else None,'tpg':r(rows.targets.mean(),1) if len(rows) else None,
+      'cpg':r(rows.carries.mean(),1) if len(rows) else None,'cs':r(rows.car_share.mean(),3) if len(rows) else None,'rz':r(rows.rzo.mean(),1) if len(rows) else None,
+      'rpg':r(rec_pg,2),'prev':r(pv,1),
+      'wk':[[int(x.week),r(x.fp,1),r(x.xfp,1),r(x.offense_pct,2),int(x.targets),int(x.carries),x.opponent_team] for x in rows.itertuples()],
+      'proj':r(proj_next,1),'nw':int(nxt[0]),'opp':nxt[1],'home':int(nxt[2]),'it':r(nxt[3],1),
+      'dvp':r(nxt[4]['dvp'],3),'adjm':r(P[0]-Pm,1),'adjv':r(P[0]-Pv,1),'prac':PRAC.get(pid),'tpl':r(TV.pl.get(tm,np.nan),1),'tpr':r(TV.pr.get(tm,np.nan),3),'ros':ros,'bye':byes.get(tm,[None])[0],
+      'sid':str(int(idx.loc[pid,'sleeper_id'])) if pid in idx.index and pd.notna(idx.loc[pid,'sleeper_id']) else None,
+      'eid':str(int(idx.loc[pid,'espn_id'])) if pid in idx.index and pd.notna(idx.loc[pid,'espn_id']) else None,
+      'yid':str(int(idx.loc[pid,'yahoo_id'])) if pid in idx.index and pd.notna(idx.loc[pid,'yahoo_id']) else None,
+      'dv':int(dvm[idx.loc[pid,'fantasypros_id']]) if pid in idx.index and idx.loc[pid,'fantasypros_id'] in dvm else None})
+players.sort(key=lambda p:-(p['proj'] or 0))
+# defense vs position, 2026 to date (PPR points allowed per game) with ranks (1 = allows the fewest)
+a26,lg26=dvp_table(SEASON,99); DVP={}
+for t in sorted(SC26.team.unique()):
+    DVP[t]={}
+    for pos in POS:
+        if (t,pos) in a26.index: sm,c=a26.loc[(t,pos)]; DVP[t][pos]=[r(sm/c,1),int(c),r(dvp_factor(SEASON,99,t,pos),3)]
+for pos in POS:
+    order=sorted([t for t in DVP if pos in DVP[t]],key=lambda t:DVP[t][pos][0])
+    for k,t in enumerate(order): DVP[t][pos].append(k+1)
+from zoneinfo import ZoneInfo
+GW=gm[(gm.season==SEASON)&(gm.week==NEXT)].sort_values(['gameday','gametime']); LGAMES=[]; LBOX={}
+for g in GW.itertuples():
+    kick=datetime.datetime.strptime(f"{g.gameday} {g.gametime}","%Y-%m-%d %H:%M").replace(tzinfo=ZoneInfo('America/New_York')).isoformat() if isinstance(g.gametime,str) else None
+    done=not pd.isna(g.home_score)
+    fav=None if pd.isna(g.spread_line) else (f"{g.home_team} -{abs(g.spread_line):g}" if g.spread_line>0 else f"{g.away_team} -{abs(g.spread_line):g}" if g.spread_line<0 else 'Pick em')
+    LGAMES.append({'id':g.game_id,'away':g.away_team,'home':g.home_team,'as':None if not done else int(g.away_score),'hs':None if not done else int(g.home_score),
+                   'state':'post' if done else 'pre','detail':'Final' if done else None,'kick':kick,'venue':g.stadium if isinstance(g.stadium,str) else None,'odds':fav,'ou':None if pd.isna(g.total_line) else float(g.total_line)})
+    if done:
+        rows=S26[S26.game_id==g.game_id]; LBOX[g.game_id]=[{'n':x.player_display_name,'t':x.team,'p':x.position,'pc':int(x.completions),'pa':int(x.attempts),'py':int(x.passing_yards),'ptd':int(x.passing_tds),'int':int(x.passing_interceptions),
+            'ra':int(x.carries),'ry':int(x.rushing_yards),'rtd':int(x.rushing_tds),'rec':int(x.receptions),'tg':int(x.targets),'ty':int(x.receiving_yards),'rectd':int(x.receiving_tds),
+            'fl':int((x.rushing_fumbles_lost or 0)+(x.receiving_fumbles_lost or 0)+(x.sack_fumbles_lost or 0))} for x in rows.itertuples() if (x.attempts or x.carries or x.targets)]
+LIVE={'week':NEXT,'at':datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='minutes'),'src':'official stats','games':LGAMES,'box':LBOX}
+SCHED={t:[[int(g.week),g.opp,int(g.home),r(g.it,1),None if pd.isna(g.pts) else int(g.pts)] for g in SC26[SC26.team==t].sort_values('week').itertuples()] for t in SC26.team.unique()}
+OUT={'asof':{'season':SEASON,'last_week':LAST,'next_week':NEXT,'built':datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d'),'depth':str(dc.dt.max())[:10],'dp_values':str(dv.scrape_date.iloc[0])},
+     'players':players,'live':LIVE,'trendsval':json.load(open('trends_val.json')) if os.path.exists('trends_val.json') else None,'dvp':DVP,'lgpos':{p:r(lg26.get(p,np.nan),1) for p in POS},'sched':SCHED,'byes':byes,'model':{'test':res,'range':RNG,'posavg':{k:r(v,1) for k,v in POSAVG.items()}}}
+def clean(o):
+    if isinstance(o,float) and (o!=o or abs(o)==float('inf')): return None
+    if isinstance(o,(np.floating,)): return clean(float(o))
+    if isinstance(o,(np.integer,)): return int(o)
+    if isinstance(o,dict): return {str(k):clean(v) for k,v in o.items()}
+    if isinstance(o,(list,tuple)): return [clean(v) for v in o]
+    return o
+json.dump(clean(OUT),open('ff_data.json','w'),separators=(',',':'),allow_nan=False)
+print('players',len(players),'| next week',NEXT,'| json KB',os.path.getsize('ff_data.json')//1024,flush=True)
+for p in players[:12]: print(f"{p['n']:24s} {p['p']} {p['t']} wk{p['nw']} vs {p['opp']} proj {p['proj']} (fpg {p['fpg']}, xfpg {p['xfpg']}, it {p['it']}, dvp {p['dvp']}) role {p['role']} inj {p['inj']}")
