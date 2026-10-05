@@ -15,12 +15,34 @@ and republishes the page for free.
   results are in `trends_val.json`, computed once from 2021-2025)
 - Your Sleeper league (optional, see below): rosters, records, and lineup settings
 
+## Built-in tools that update with the data
+- **Cheat sheet:** must starts, don't starts, and sleepers for the week that matters. Once two or
+  fewer games are left in a week, it moves on to next week automatically.
+- **Boom and bust chances** for every player, from how real outcomes spread around similar
+  projections (saved by the data update in the page's model data).
+- **Matchup simulator** (My League): win chance against any opponent from thousands of simulated
+  weeks, counting finished and in-progress games.
+- **On pace for:** live projections during games.
+
+## News
+- The **News** tab lists injury designations (with practice status), injured reserve moves,
+  depth chart changes, and roster moves, detected from the official nflverse data every time
+  the data update runs, plus the latest ESPN headlines (refreshed every few minutes), linked to
+  the players they mention. Each player's card shows his own news.
+
+## Projection accuracy
+- Every player's projection is saved right before his game kicks off (`proj_history.json`) and
+  compared with what he actually scored. The Learn tab shows the results week by week, and box
+  scores show projected vs. actual points. This builds up automatically through the season.
+
 ## Live scores
 - On your GitHub site, the **Live** tab and the score ticker load ESPN's public scoreboard and
   box scores directly every 30 seconds while games are on, with live fantasy points for every
   player and your own lineup (if ESPN allows browsers to load it directly; the Live tab shows
   which source it is using).
-- As a backup, the `Live scores` workflow (`scores.yml`) saves a copy to `live.json` about every
+- Live games show down, distance, yard line, and a field graphic. Tapping a game drops its
+  official box score, fantasy points, and team stats down right under it.
+- As a backup, the `Live scores and news` workflow (`scores.yml`) saves copies to `live.json` and `news.json` about every
   10 minutes (GitHub Pages allows about 10 site updates per hour, and GitHub can delay scheduled jobs). The page falls back to it if your browser cannot reach ESPN. It only saves a new
   copy when a score or stat changed, so it does not flood your repository.
 - Add `scores.yml` the same way as `update.yml` (step 4 below).
