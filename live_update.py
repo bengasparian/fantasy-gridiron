@@ -1,12 +1,13 @@
 """Refresh live.json with ESPN's public scoreboard and box scores (run every few minutes on game days).
 The page loads ESPN directly every 30 seconds when it can; live.json is the backup copy it falls back to."""
-import json, os, urllib.request, datetime
+import json, os, time, urllib.request, datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 EMAP = {"WSH": "WAS", "LAR": "LA"}
 BASE = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/"
 
 def get(url):
     req = urllib.request.Request(url, headers={"User-Agent": "gridiron-fantasy"})
-    with urllib.request.urlopen(req, timeout=30) as r: return json.load(r)
+    with urllib.request.urlopen(req, timeout=12) as r: return json.load(r)
 
 def ab(c): k = ((c.get("team") or {}).get("abbreviation")) or "?"; return EMAP.get(k, k)
 
@@ -16,9 +17,11 @@ def games(sb):
         c = (e.get("competitions") or [{}])[0]; C = c.get("competitors") or []
         h = next((x for x in C if x.get("homeAway") == "home"), {}); a = next((x for x in C if x.get("homeAway") == "away"), {})
         s = e.get("status") or c.get("status") or {}; t = s.get("type") or {}; sit = c.get("situation") or {}; o = (c.get("odds") or [{}])[0]
-        pre = t.get("state") == "pre"; poss = sit.get("possession")
+        pp = any(k in (t.get("name") or "") for k in ("POSTPONED", "CANCELED", "SUSPENDED"))
+        pre = pp or t.get("state") == "pre"; poss = None if pp else sit.get("possession")
+        if len(C) < 2: continue
         out.append({"id": e.get("id"), "home": ab(h), "away": ab(a), "hs": None if pre else int(h.get("score") or 0), "as": None if pre else int(a.get("score") or 0),
-                    "state": t.get("state") or "pre", "detail": t.get("shortDetail") or t.get("detail") or "", "clock": s.get("displayClock"), "q": s.get("period"),
+                    "state": "pre" if pp else (t.get("state") or "pre"), "detail": (t.get("description") or "Postponed") if pp else (t.get("shortDetail") or t.get("detail") or ""), "clock": s.get("displayClock"), "q": s.get("period"),
                     "poss": (ab(h) if poss == h.get("id") else ab(a)) if poss else None, "dd": sit.get("shortDownDistanceText") or sit.get("downDistanceText"),
                     "ddl": sit.get("downDistanceText"), "down": sit.get("down"), "dist": sit.get("distance"), "yl": sit.get("yardLine"), "ptxt": sit.get("possessionText"),
                     "rz": bool(sit.get("isRedZone")), "kick": e.get("date"), "venue": (c.get("venue") or {}).get("fullName"),
@@ -59,10 +62,14 @@ if __name__ == "__main__":
     old = json.load(open("live.json")) if os.path.exists("live.json") else {}
     try:
         sb = get(BASE + "scoreboard"); G = games(sb); B = {k: v for k, v in (old.get("box") or {}).items() if isinstance(v, dict)}
-        for g in G:
-            if g["state"] == "in" or (g["state"] == "post" and not B.get(g["id"])):
-                try: B[g["id"]] = box(get(BASE + "summary?event=" + str(g["id"])))
-                except Exception as e: print("box score unavailable for", g["id"], e)
+        need = [g for g in G if g["state"] == "in" or (g["state"] == "post" and not B.get(g["id"]))]
+        t0 = time.time()
+        with ThreadPoolExecutor(max_workers=4) as ex:   # box scores 4 at a time, and never more than ~2 minutes in total
+            futs = {ex.submit(get, BASE + "summary?event=" + str(g["id"])): g["id"] for g in need}
+            for f in as_completed(futs, timeout=150):
+                try: B[futs[f]] = box(f.result())
+                except Exception as e: print("box score unavailable for", futs[f], e)
+                if time.time() - t0 > 140: print("time budget reached; keeping earlier box scores for the rest"); break
         new = {"src": "ESPN, refreshed every few minutes", "week": (sb.get("week") or {}).get("number"), "games": G, "box": {k: v for k, v in B.items() if any(str(x["id"]) == str(k) for x in G)}}
         if {k: old.get(k) for k in ("games", "box")} != {k: new[k] for k in ("games", "box")}:
             new["at"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")

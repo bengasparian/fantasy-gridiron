@@ -4,7 +4,7 @@ URL = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/news?limit=50"
 
 def fetch_headlines():
     req = urllib.request.Request(URL, headers={"User-Agent": "gridiron-fantasy"})
-    with urllib.request.urlopen(req, timeout=30) as r: j = json.load(r)
+    with urllib.request.urlopen(req, timeout=15) as r: j = json.load(r)
     out = []
     for a in j.get("articles") or []:
         h = a.get("headline")
