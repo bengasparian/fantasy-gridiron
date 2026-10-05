@@ -61,7 +61,7 @@ dc2=dc[dc.pos_abb.isin(RMAP)].copy(); dc2['pg']=dc2.pos_abb.map(RMAP); role=dc2.
 pool={x for x in set(S26.player_id)|set(dc2[dc2.pos_rank<=(3)].gsis_id) if isinstance(x,str) and x}
 info=st.sort_values(['season','week']).groupby('player_id').tail(1).set_index('player_id')
 idx=ids.dropna(subset=['gsis_id']).drop_duplicates('gsis_id').set_index('gsis_id')
-dv=pd.read_csv('values.csv'); dvm=dv.set_index('fp_id').value_1qb.to_dict()
+dv=pd.read_csv('values.csv'); dvm=dv.set_index('fp_id').value_1qb.to_dict(); dvm2=dv.set_index('fp_id').value_2qb.to_dict() if 'value_2qb' in dv.columns else {}
 SC26=SC[SC.season==SEASON]; import sys
 if SC26.pts.isna().sum()==0: print('Regular season complete: no unplayed games, keeping the current page.'); sys.exit(0)
 NEXT=int(SC26[SC26.pts.isna()].week.min()); byes={}   # current NFL week = earliest week with an unplayed game
@@ -131,7 +131,8 @@ for pid in pool:
       'sid':str(int(idx.loc[pid,'sleeper_id'])) if pid in idx.index and pd.notna(idx.loc[pid,'sleeper_id']) else None,
       'eid':str(int(idx.loc[pid,'espn_id'])) if pid in idx.index and pd.notna(idx.loc[pid,'espn_id']) else None,
       'yid':str(int(idx.loc[pid,'yahoo_id'])) if pid in idx.index and pd.notna(idx.loc[pid,'yahoo_id']) else None,
-      'dv':int(dvm[idx.loc[pid,'fantasypros_id']]) if pid in idx.index and idx.loc[pid,'fantasypros_id'] in dvm else None})
+      'dv':int(dvm[idx.loc[pid,'fantasypros_id']]) if pid in idx.index and idx.loc[pid,'fantasypros_id'] in dvm else None,
+      'dv2':int(dvm2[idx.loc[pid,'fantasypros_id']]) if pid in idx.index and idx.loc[pid,'fantasypros_id'] in dvm2 and dvm2[idx.loc[pid,'fantasypros_id']]==dvm2[idx.loc[pid,'fantasypros_id']] else None})
 players.sort(key=lambda p:-(p['proj'] or 0))
 # defense vs position, 2026 to date (PPR points allowed per game) with ranks (1 = allows the fewest)
 a26,lg26=dvp_table(SEASON,99); DVP={}

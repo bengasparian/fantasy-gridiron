@@ -32,6 +32,10 @@ and republishes the page for free.
 - **Mock Draft:** draft against AI teams with different strategies using the site's rankings,
   with scarcity-aware recommendations, undo, and a graded result.
 
+## Trends & Matchups
+- One tab with buy/sell signals, usage risers and fallers, this week's matchups, defense vs. position,
+  schedules (next 4 weeks, rest of season, playoffs), and Best bets where the signals agree.
+
 ## News
 - The **News** tab lists injury designations (with practice status), injured reserve moves,
   depth chart changes, and roster moves, detected from the official nflverse data every time
