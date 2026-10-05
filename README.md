@@ -1,6 +1,6 @@
-# Gridiron Fantasy: auto-updating version
+# BFF · Ben's Fantasy Football: auto-updating version
 
-This folder turns Gridiron Fantasy into a website that refreshes itself every 6 hours. GitHub
+This folder turns BFF (Ben's Fantasy Football) into a website that refreshes itself every 6 hours. GitHub
 downloads the latest NFL data, rebuilds every projection, optionally syncs your Sleeper league,
 and republishes the page for free.
 
@@ -16,6 +16,11 @@ and republishes the page for free.
 - Your Sleeper league (optional, see below): rosters, records, and lineup settings
 
 ## Built-in tools that update with the data
+- **Situation-aware projections:** when a starter is ruled out or on injured reserve, his targets and
+  carries are passed to his teammates by their current roles, and backup quarterbacks move up
+  when the starter is out. Tested on the 2025 season before it was used.
+- **Home dashboard:** top plays, fades, sleepers, headlines, injuries, trends, top performers,
+  matchups, playoff schedules, your team, and model accuracy, all linking to their tabs.
 - **Cheat sheet:** must starts, don't starts, and sleepers for the week that matters. Once two or
   fewer games are left in a week, it moves on to next week automatically.
 - **Boom and bust chances** for every player, from how real outcomes spread around similar

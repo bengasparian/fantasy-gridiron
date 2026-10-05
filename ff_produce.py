@@ -6,17 +6,26 @@ def get(rel):
     with urllib.request.urlopen(B+rel,timeout=180) as r_: return pd.read_parquet(io.BytesIO(r_.read()))
 if os.path.exists('DTR.parquet'): DTR=pd.read_parquet('DTR.parquet'); D25=pd.read_parquet('D25.parquet')
 else: DTR=build([2021,2022,2023,2024]); D25=build([2025]); DTR.to_parquet('DTR.parquet'); D25.to_parquet('D25.parquet')
+for _d in (DTR,D25):
+    for _c in ('bump','qbm','vac_all'):
+        if _c not in _d.columns: _d[_c]=0.0
 POSAVG={p:float(DTR[DTR.pos==p].y.mean()) for p in POS}
 def prep(d):
     d=d.copy(); pa=d.pos.map(POSAVG); pv=d.prev.fillna(pa)
     d['b']=np.where(d.g>0,(d.ppg.fillna(0)*d.g+pv*3)/(d.g+3),pv); d['bx']=np.where(d.g>0,(d.xpg.fillna(0)*d.g+pv*3)/(d.g+3),pv)
-    d['l3f']=d.l3.fillna(d.b); d['dv']=d.dvp.fillna(1.0)-1; d['iv']=d.it.fillna(22.5)/22.5-1; d['bd']=d.b*d.dv; d['bi']=d.b*d.iv; return d
-L=['b','bx','l3f','bd','bi']; FT=F+['b','bx']
+    d['l3f']=d.l3.fillna(d.b); d['dv']=d.dvp.fillna(1.0)-1; d['iv']=d.it.fillna(22.5)/22.5-1; d['bd']=d.b*d.dv; d['bi']=d.b*d.iv
+    for c in ('bump','qbm','vac_all'):
+        d[c]=d[c].fillna(0.0) if c in d.columns else 0.0
+    d['bq']=d.b*d.qbm; return d
+# situation-aware: vacated opportunity from injured teammates, and games without the starting QB (tested on 2025: better at every position)
+L=['b','bx','l3f','bd','bi','bump','bq']; FT=F+['b','bx','bump','qbm','vac_all']
+# quarterbacks use only the 'starting QB is out' signal (receiver injuries pushed QB projections the wrong way)
+FEAT=lambda pos:(['b','bx','l3f','bd','bi','bq'],F+['b','bx','qbm']) if pos=='QB' else (L,FT)
 mk_lin=lambda:HuberRegressor(max_iter=500,epsilon=1.6); mk_tree=lambda:HGBR(max_iter=250,learning_rate=.04,max_leaf_nodes=15,min_samples_leaf=80,l2_regularization=2.0,random_state=0)
 res={}; CH={}; RNG={}; QS={}
 for pos in POS:
     a=prep(DTR[DTR.pos==pos]); t=prep(D25[D25.pos==pos])
-    pl=mk_lin().fit(a[L],a.y).predict(t[L]); pt=mk_tree().fit(a[FT],a.y).predict(t[FT]); pe=(pl+pt)/2
+    LL,FF=FEAT(pos); pl=mk_lin().fit(a[LL],a.y).predict(t[LL]); pt=mk_tree().fit(a[FF],a.y).predict(t[FF]); pe=(pl+pt)/2
     def sp(pred): return float(np.nanmean([spearmanr(x.pp,x.y).correlation for w,x in t.assign(pp=pred).groupby('week') if len(x)>8]))
     cand={'blend':t.b.values,'linear':pl,'tree':pt,'ensemble':pe}; sc={k:(float(np.mean(np.abs(v-t.y))),sp(v)) for k,v in cand.items()}
     best=min(['linear','tree','ensemble'],key=lambda k:sc[k][0]-2*sc[k][1])   # favor ranking accuracy (start/sit) as well as error
@@ -30,9 +39,9 @@ for pos in POS:
     print(pos,{k:(round(v[0],2),round(v[1],3)) for k,v in sc.items()},'->',best,flush=True)
 DA=prep(pd.concat([DTR,D25])); FIN={}
 for pos in POS:
-    a=DA[DA.pos==pos]; FIN[pos]=(mk_lin().fit(a[L],a.y),mk_tree().fit(a[FT],a.y))
+    a=DA[DA.pos==pos]; LL,FF=FEAT(pos); FIN[pos]=(mk_lin().fit(a[LL],a.y),mk_tree().fit(a[FF],a.y))
 def predict(pos,d):
-    lin,tree=FIN[pos]; d=prep(d); pl=lin.predict(d[L]); pt=tree.predict(d[FT])
+    lin,tree=FIN[pos]; d=prep(d); pl=lin.predict(d[FEAT(pos)[0]]); pt=tree.predict(d[FEAT(pos)[1]])
     return np.maximum(0,{'linear':pl,'tree':pt,'ensemble':(pl+pt)/2}[CH[pos]])
 # ---------------- 2026 state
 S26=st[st.season==SEASON]; LAST=int(S26.week.max())
@@ -63,6 +72,28 @@ def team_of(pid):
     if pid in role.index: return role.loc[pid,'team'],'ACT'
     return (info.loc[pid,'team'] if pid in info.index else None),None
 players=[]; prev_pg=prev
+# ---- teammates expected to miss games: Out/Doubtful on the latest injury report for the next game; injured reserve for every remaining week
+OUTN=set(injs[injs.report_status.isin(['Out','Doubtful'])].index) if len(injs) else set()
+IRS=set(cur[cur.status=='RES'].index)
+SIT={}
+for tm_,G_ in S26.groupby('team'):
+    wks_=sorted(G_.week.unique())[-3:]; rec_=G_[G_.week.isin(wks_)].groupby('player_id').agg(xpg=('xfp','mean'),gp=('week','nunique'),pos=('position','first'),att=('attempts','sum'),name=('player_display_name','first'))
+    rec_=rec_[rec_.gp>=min(2,len(wks_))]
+    def _sit(outset,rec=rec_):
+        miss=rec[rec.index.isin(outset)]; pres=rec[~rec.index.isin(outset)]; qb=rec[rec.pos=='QB'].sort_values('att',ascending=False)
+        qbm=int(len(qb)>0 and qb.index[0] in outset and qb.att.iloc[0]>=40)
+        return dict(pres=pres,vr=float(miss[(miss.pos=='RB')&(miss.xpg>=4)].xpg.sum()),vw=float(miss[miss.pos.isin(['WR','TE'])&(miss.xpg>=4)].xpg.sum()),qbm=qbm,
+                    names=[n for n,x in zip(miss.name,miss.xpg) if x>=4],qbname=(qb.name.iloc[0] if qbm else None))
+    SIT[tm_]={'next':_sit(OUTN|IRS),'later':_sit(IRS)}
+def sit_feats(pid,pos,tm,which):
+    s_=(SIT.get(tm) or {}).get(which)
+    if not s_: return 0.0,0,0.0
+    pres=s_['pres']
+    if pid not in pres.index: return 0.0,s_['qbm'],s_['vr']+s_['vw']
+    grp=['RB'] if pos=='RB' else ['WR','TE'] if pos in ('WR','TE') else []
+    vac=s_['vr'] if pos=='RB' else s_['vw'] if pos in ('WR','TE') else 0.0
+    tot=float(pres[pres.pos.isin(grp)].xpg.sum()) if grp else 0.0
+    return (vac*float(pres.loc[pid,'xpg'])/tot if tot>0 else 0.0),s_['qbm'],s_['vr']+s_['vw']
 for pid in pool:
     tm,status=team_of(pid)
     if tm is None: continue
@@ -75,11 +106,12 @@ for pid in pool:
     base=feats(SEASON,99,rows,None); pv=prev_pg.get((pid,SEASON),np.nan)
     sched=SC26[(SC26.team==tm)&SC26.pts.isna()].sort_values('week')   # this team's unplayed games
     wk_rows=[]
-    for g in sched.itertuples():
-        f=dict(base); f.update(pos=pos,prev=pv,dvp=dvp_factor(SEASON,99,g.opp,pos),it=g.it,home=g.home); wk_rows.append((g.week,g.opp,g.home,g.it,f))
+    for gi_,g in enumerate(sched.itertuples()):
+        bmp_,qm_,va_=sit_feats(pid,pos,tm,'next' if gi_==0 else 'later')
+        f=dict(base); f.update(pos=pos,prev=pv,dvp=dvp_factor(SEASON,99,g.opp,pos),it=g.it,home=g.home,bump=bmp_,qbm=qm_,vac_all=va_); wk_rows.append((g.week,g.opp,g.home,g.it,f))
     if not wk_rows: continue
     FR=pd.DataFrame([w[4] for w in wk_rows]); P=predict(pos,FR)
-    Pm=predict(pos,FR.iloc[:1].assign(dvp=np.nan))[0]; Pv=predict(pos,FR.iloc[:1].assign(it=np.nan))[0]
+    Pm=predict(pos,FR.iloc[:1].assign(dvp=np.nan))[0]; Pv=predict(pos,FR.iloc[:1].assign(it=np.nan))[0]; Pt=predict(pos,FR.iloc[:1].assign(bump=0.0,qbm=0,vac_all=0.0))[0]
     out=injs.loc[pid,'report_status'] if pid in injs.index else None; ir=status=='RES'
     nxt=wk_rows[0]; proj_next=float(P[0])
     if out=='Out' or ir: proj_next=0.0
@@ -95,7 +127,7 @@ for pid in pool:
       'rpg':r(rec_pg,2),'prev':r(pv,1),
       'wk':[[int(x.week),r(x.fp,1),r(x.xfp,1),r(x.offense_pct,2),int(x.targets),int(x.carries),x.opponent_team] for x in rows.itertuples()],
       'proj':r(proj_next,1),'nw':int(nxt[0]),'opp':nxt[1],'home':int(nxt[2]),'it':r(nxt[3],1),
-      'dvp':r(nxt[4]['dvp'],3),'adjm':r(P[0]-Pm,1),'adjv':r(P[0]-Pv,1),'prac':PRAC.get(pid),'tpl':r(TV.pl.get(tm,np.nan),1),'tpr':r(TV.pr.get(tm,np.nan),3),'ros':ros,'bye':byes.get(tm,[None])[0],
+      'dvp':r(nxt[4]['dvp'],3),'adjm':r(P[0]-Pm,1),'adjv':r(P[0]-Pv,1),'adjt':(0.0 if (out=='Out' or ir) else r(P[0]-Pt,1)),'tmo':[n for n in (SIT.get(tm,{}).get('next',{}).get('names') or []) if n!=name][:4],'qbo':(lambda q:q if q and q!=name else None)(SIT.get(tm,{}).get('next',{}).get('qbname')),'prac':PRAC.get(pid),'tpl':r(TV.pl.get(tm,np.nan),1),'tpr':r(TV.pr.get(tm,np.nan),3),'ros':ros,'bye':byes.get(tm,[None])[0],
       'sid':str(int(idx.loc[pid,'sleeper_id'])) if pid in idx.index and pd.notna(idx.loc[pid,'sleeper_id']) else None,
       'eid':str(int(idx.loc[pid,'espn_id'])) if pid in idx.index and pd.notna(idx.loc[pid,'espn_id']) else None,
       'yid':str(int(idx.loc[pid,'yahoo_id'])) if pid in idx.index and pd.notna(idx.loc[pid,'yahoo_id']) else None,
