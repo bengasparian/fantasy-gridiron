@@ -23,6 +23,9 @@ and republishes the page for free.
 - **Matchup simulator** (My League): win chance against any opponent from thousands of simulated
   weeks, counting finished and in-progress games.
 - **On pace for:** live projections during games.
+- **Overall ranks** on every player card (rest of season and season so far).
+- **Mock Draft:** draft against AI teams with different strategies using the site's rankings,
+  with scarcity-aware recommendations, undo, and a graded result.
 
 ## News
 - The **News** tab lists injury designations (with practice status), injured reserve moves,
