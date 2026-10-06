@@ -32,6 +32,11 @@ and republishes the page for free.
 - **Mock Draft:** draft against AI teams with different strategies using the site's rankings,
   with scarcity-aware recommendations, undo, and a graded result.
 
+## Game center
+- The game bar under the header lists every game of the week. Click any game (there or on the Live tab)
+  for a full-screen page: score and status, Vegas outlook and win chances, injuries, expected top performers
+  with projected stat lines, matchup grades, and the full box score for live or past games.
+
 ## Live tab weeks
 - Pick any week: past weeks show final scores and fantasy box scores, future weeks show the schedule with
   kickoff times and betting lines. The tab moves to the new week automatically every Tuesday.
