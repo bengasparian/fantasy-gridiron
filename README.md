@@ -32,6 +32,20 @@ and republishes the page for free.
 - **Mock Draft:** draft against AI teams with different strategies using the site's rankings,
   with scarcity-aware recommendations, undo, and a graded result.
 
+## Live tab weeks
+- Pick any week: past weeks show final scores and fantasy box scores, future weeks show the schedule with
+  kickoff times and betting lines. The tab moves to the new week automatically every Tuesday.
+
+## Fantasy Help
+- Draft guide by pick, waiver and trade targets for most leagues, charts with correlations, a mock trade
+  analyzer, betting help (prop projections, a line checker, parlay ideas; 21+, for entertainment), and tips.
+
+## Parlay tracker
+- `parlay_update.py` records each week's suggested parlays in `parlay_history.json`. They can update until
+  the week's first kickoff, then they lock, and they are graded from official box scores once games are final
+  (a leg is a hit, a miss, or void if the player did not play). See Fantasy Help > Betting help > Past wins.
+  Tracking starts with the first week this runs; earlier weeks are never filled in with hindsight.
+
 ## Trends & Matchups
 - One tab with buy/sell signals, usage risers and fallers, this week's matchups, defense vs. position,
   schedules (next 4 weeks, rest of season, playoffs), and Best bets where the signals agree.

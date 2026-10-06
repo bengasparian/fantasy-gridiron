@@ -72,6 +72,12 @@ def team_of(pid):
     if pid in role.index: return role.loc[pid,'team'],'ACT'
     return (info.loc[pid,'team'] if pid in info.index else None),None
 players=[]; prev_pg=prev
+_GLC=['completions','attempts','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards','rushing_tds','receptions','targets','receiving_yards','receiving_tds']
+_g=S26.copy()
+for _c in _GLC+['sack_fumbles_lost','rushing_fumbles_lost','receiving_fumbles_lost']:
+    if _c not in _g.columns: _g[_c]=0
+_g['_fl']=_g[['sack_fumbles_lost','rushing_fumbles_lost','receiving_fumbles_lost']].fillna(0).sum(axis=1)
+GL={pid:[[int(x['week'])]+[int(round(float(x[c] or 0))) for c in _GLC]+[int(x['_fl'])] for _,x in grp.sort_values('week').iterrows()] for pid,grp in _g.fillna(0).groupby('player_id')}
 # ---- teammates expected to miss games: Out/Doubtful on the latest injury report for the next game; injured reserve for every remaining week
 OUTN=set(injs[injs.report_status.isin(['Out','Doubtful'])].index) if len(injs) else set()
 IRS=set(cur[cur.status=='RES'].index)
@@ -125,6 +131,7 @@ for pid in pool:
       'ays':r(rows.air_yards_share.mean(),3) if len(rows) else None,'wopr':r(rows.wopr.mean(),3) if len(rows) else None,'tpg':r(rows.targets.mean(),1) if len(rows) else None,
       'cpg':r(rows.carries.mean(),1) if len(rows) else None,'cs':r(rows.car_share.mean(),3) if len(rows) else None,'rz':r(rows.rzo.mean(),1) if len(rows) else None,
       'rpg':r(rec_pg,2),'prev':r(pv,1),
+      'gl':GL.get(pid,[]),
       'wk':[[int(x.week),r(x.fp,1),r(x.xfp,1),r(x.offense_pct,2),int(x.targets),int(x.carries),x.opponent_team] for x in rows.itertuples()],
       'proj':r(proj_next,1),'nw':int(nxt[0]),'opp':nxt[1],'home':int(nxt[2]),'it':r(nxt[3],1),
       'dvp':r(nxt[4]['dvp'],3),'adjm':r(P[0]-Pm,1),'adjv':r(P[0]-Pv,1),'adjt':(0.0 if (out=='Out' or ir) else r(P[0]-Pt,1)),'tmo':[n for n in (SIT.get(tm,{}).get('next',{}).get('names') or []) if n!=name][:4],'qbo':(lambda q:q if q and q!=name else None)(SIT.get(tm,{}).get('next',{}).get('qbname')),'prac':PRAC.get(pid),'tpl':r(TV.pl.get(tm,np.nan),1),'tpr':r(TV.pr.get(tm,np.nan),3),'ros':ros,'bye':byes.get(tm,[None])[0],
@@ -204,7 +211,12 @@ for wk,pr in sorted(HS.items(),key=lambda x:int(x[0])):
     dfa=pd.DataFrame(rows,columns=['p','a','pos']); rk=[spearmanr(x.p,x.a).correlation for _,x in dfa.groupby('pos') if len(x)>=10]
     ACC.append({'wk':int(wk),'n':len(dfa),'mae':r(float((dfa.p-dfa.a).abs().mean()),2),'rank':r(float(np.nanmean(rk)),3) if rk else None})
 LIVE={'week':NEXT,'at':datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='minutes'),'src':'official stats','games':LGAMES,'box':LBOX}
-SCHED={t:[[int(g.week),g.opp,int(g.home),r(g.it,1),None if pd.isna(g.pts) else int(g.pts)] for g in SC26[SC26.team==t].sort_values('week').itertuples()] for t in SC26.team.unique()}
+_KX={}
+for _x in gm[gm.season==SEASON].itertuples():
+    _k=datetime.datetime.strptime(f"{_x.gameday} {_x.gametime}","%Y-%m-%d %H:%M").replace(tzinfo=ZoneInfo('America/New_York')).isoformat() if isinstance(_x.gametime,str) else (str(_x.gameday) if isinstance(_x.gameday,str) else None)
+    _sp=None if pd.isna(_x.spread_line) else float(_x.spread_line); _to=None if pd.isna(_x.total_line) else float(_x.total_line)
+    _KX[(int(_x.week),_x.home_team)]=(_k,None if _sp is None else -_sp,_to); _KX[(int(_x.week),_x.away_team)]=(_k,_sp,_to)
+SCHED={t:[[int(g.week),g.opp,int(g.home),r(g.it,1),None if pd.isna(g.pts) else int(g.pts)]+list(_KX.get((int(g.week),t),(None,None,None))) for g in SC26[SC26.team==t].sort_values('week').itertuples()] for t in SC26.team.unique()}
 OUT={'asof':{'season':SEASON,'last_week':LAST,'next_week':NEXT,'built':datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d'),'depth':str(dc.dt.max())[:10],'dp_values':str(dv.scrape_date.iloc[0])},
      'players':players,'live':LIVE,'news':NEWS,'headlines':HEAD,'ph':HS.get(str(NEXT),{}),'acc':ACC,'trendsval':json.load(open('trends_val.json')) if os.path.exists('trends_val.json') else None,'dvp':DVP,'lgpos':{p:r(lg26.get(p,np.nan),1) for p in POS},'sched':SCHED,'byes':byes,'model':{'test':res,'range':RNG,'qs':QS,'posavg':{k:r(v,1) for k,v in POSAVG.items()}}}
 def clean(o):
