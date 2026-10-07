@@ -45,17 +45,17 @@ and republishes the page for free.
 - Draft guide by pick, waiver and trade targets for most leagues, charts with correlations, a mock trade
   analyzer, betting help (prop projections, a line checker, parlay ideas; 21+, for entertainment), and tips.
 
-## Real prop lines and the parlay tracker
-- `props_update.py` pulls real player-prop lines (PrizePicks and Underdog standard lines, plus DraftKings and FanDuel)
-  from The Odds API (the-odds-api.com). Setup: get a free API key there, then in GitHub go to Settings > Secrets and
-  variables > Actions > New repository secret, name it `ODDS_API_KEY`, and paste the key.
-- Credits: one refresh of a week's slate costs about 75 credits (about 15 games x 5 stat markets). The free plan's 500
-  credits/month allow about 6 refreshes a month; the 20K plan (about $30/month) refreshes about every 3 hours. The script
-  spreads your remaining credits over the month automatically and never fails the job if the API is unreachable.
-- `parlay_update.py` builds the best 2-, 3- and 5-pick from posted lines only (no invented lines). Chances blend our
-  projection with the market's. Picks follow the lines until the week's first kickoff, then lock, and are graded from
-  official box scores (hit, miss, or void if the player did not play). See Fantasy Help > Betting help.
-- No key = no suggestions. The line checker still works with any line you type in. For entertainment, 21+ where legal.
+## Predicted prop lines and the parlay tracker
+- `ff_lines.py` predicts this week's prop lines (passing yards and TDs, rushing yards, receptions, receiving yards): what
+  PrizePicks, Underdog and sportsbooks are expected to post, built from this season and last season, the Vegas team
+  total and the defense, set at the typical game and ending in .5. Only expected starters and regular players get lines.
+  It runs with every data update, so lines move as players perform. No API key or extra setup needed.
+- Tested on every 2025 game (pre-game information only): overs hit 49-50% for every stat; typical miss 62 passing yards,
+  23 rushing yards, 1.7 catches, 22 receiving yards. Picks shown at 54%+ won 57.7%; passing-yard picks did not beat
+  their lines, so they are never picked. Real app lines may be sharper than ours, so treat edges as smaller.
+- `parlay_update.py` builds the best 2-, 3- and 5-pick from those lines (one leg per game, at most 2 of one stat),
+  locks them at the week's first kickoff, and grades them from official box scores (Fantasy Help > Betting help).
+  For entertainment, 21+ where legal.
 
 ## Trends & Matchups
 - One tab with buy/sell signals, usage risers and fallers, this week's matchups, defense vs. position,
