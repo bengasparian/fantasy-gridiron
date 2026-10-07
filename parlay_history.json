@@ -1,13 +1,25 @@
 {
  "5": {
   "wk": 5,
-  "made": "2026-10-06T22:46+00:00",
+  "made": "2026-10-07T00:50+00:00",
   "locks": "2026-10-08T20:15:00-04:00",
   "parlays": [
    {
     "type": "safe",
-    "prob": 0.7431,
+    "prob": 0.7432,
     "legs": [
+     {
+      "pid": "00-0034857",
+      "n": "Josh Allen",
+      "pos": "QB",
+      "t": "BUF",
+      "opp": "LA",
+      "k": "py",
+      "line": 142.5,
+      "lean": "Over",
+      "pr": 0.9058,
+      "res": "pending"
+     },
      {
       "pid": "00-0036971",
       "n": "Trevor Lawrence",
@@ -28,18 +40,6 @@
       "opp": "LAC",
       "k": "py",
       "line": 139.5,
-      "lean": "Over",
-      "pr": 0.9058,
-      "res": "pending"
-     },
-     {
-      "pid": "00-0036264",
-      "n": "Jordan Love",
-      "pos": "QB",
-      "t": "GB",
-      "opp": "CHI",
-      "k": "py",
-      "line": 138.5,
       "lean": "Over",
       "pr": 0.9058,
       "res": "pending"
@@ -104,7 +104,7 @@
    },
    {
     "type": "long",
-    "prob": 0.1583,
+    "prob": 0.1576,
     "legs": [
      {
       "pid": "00-0036358",
@@ -127,7 +127,7 @@
       "k": "td",
       "line": 0.5,
       "lean": "Over",
-      "pr": 0.5406,
+      "pr": 0.5383,
       "res": "pending"
      },
      {
