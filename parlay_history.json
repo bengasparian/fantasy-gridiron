@@ -1,10 +1,162 @@
 {
  "5": {
   "wk": 5,
-  "made": "2026-10-07T08:10+00:00",
+  "made": "2026-10-07T08:36+00:00",
   "locks": "2026-10-08T20:15:00-04:00",
-  "lines_at": null,
-  "src": null,
-  "parlays": []
+  "lines_at": "2026-10-07T08:36+00:00",
+  "src": "BFF predicted lines",
+  "parlays": [
+   {
+    "type": "safe",
+    "prob": 0.3761,
+    "legs": [
+     {
+      "pid": "00-0039739",
+      "t": "PIT",
+      "opp": "IND",
+      "k": "rec",
+      "line": 1.5,
+      "lean": "Over",
+      "pr": 0.62,
+      "book": "bff",
+      "n": "Roman Wilson",
+      "pos": "WR",
+      "res": "pending"
+     },
+     {
+      "pid": "00-0033090",
+      "t": "NE",
+      "opp": "LV",
+      "k": "rec",
+      "line": 2.5,
+      "lean": "Over",
+      "pr": 0.6066,
+      "book": "bff",
+      "n": "Hunter Henry",
+      "pos": "TE",
+      "res": "pending"
+     }
+    ],
+    "status": "pending"
+   },
+   {
+    "type": "bal",
+    "prob": 0.2247,
+    "legs": [
+     {
+      "pid": "00-0039739",
+      "t": "PIT",
+      "opp": "IND",
+      "k": "rec",
+      "line": 1.5,
+      "lean": "Over",
+      "pr": 0.62,
+      "book": "bff",
+      "n": "Roman Wilson",
+      "pos": "WR",
+      "res": "pending"
+     },
+     {
+      "pid": "00-0033090",
+      "t": "NE",
+      "opp": "LV",
+      "k": "rec",
+      "line": 2.5,
+      "lean": "Over",
+      "pr": 0.6066,
+      "book": "bff",
+      "n": "Hunter Henry",
+      "pos": "TE",
+      "res": "pending"
+     },
+     {
+      "pid": "00-0036355",
+      "t": "LAC",
+      "opp": "DEN",
+      "k": "ptd",
+      "line": 0.5,
+      "lean": "Over",
+      "pr": 0.5975,
+      "book": "bff",
+      "n": "Justin Herbert",
+      "pos": "QB",
+      "res": "pending"
+     }
+    ],
+    "status": "pending"
+   },
+   {
+    "type": "long",
+    "prob": 0.0757,
+    "legs": [
+     {
+      "pid": "00-0039739",
+      "t": "PIT",
+      "opp": "IND",
+      "k": "rec",
+      "line": 1.5,
+      "lean": "Over",
+      "pr": 0.62,
+      "book": "bff",
+      "n": "Roman Wilson",
+      "pos": "WR",
+      "res": "pending"
+     },
+     {
+      "pid": "00-0033090",
+      "t": "NE",
+      "opp": "LV",
+      "k": "rec",
+      "line": 2.5,
+      "lean": "Over",
+      "pr": 0.6066,
+      "book": "bff",
+      "n": "Hunter Henry",
+      "pos": "TE",
+      "res": "pending"
+     },
+     {
+      "pid": "00-0036355",
+      "t": "LAC",
+      "opp": "DEN",
+      "k": "ptd",
+      "line": 0.5,
+      "lean": "Over",
+      "pr": 0.5975,
+      "book": "bff",
+      "n": "Justin Herbert",
+      "pos": "QB",
+      "res": "pending"
+     },
+     {
+      "pid": "00-0032950",
+      "t": "MIN",
+      "opp": "NO",
+      "k": "ptd",
+      "line": 1.5,
+      "lean": "Under",
+      "pr": 0.5951,
+      "book": "bff",
+      "n": "Carson Wentz",
+      "pos": "QB",
+      "res": "pending"
+     },
+     {
+      "pid": "00-0038797",
+      "t": "SEA",
+      "opp": "SF",
+      "k": "ry",
+      "line": 34.5,
+      "lean": "Over",
+      "pr": 0.5661,
+      "book": "bff",
+      "n": "Emanuel Wilson",
+      "pos": "RB",
+      "res": "pending"
+     }
+    ],
+    "status": "pending"
+   }
+  ]
  }
 }
