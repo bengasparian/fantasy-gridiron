@@ -1,9 +1,9 @@
 {
  "5": {
   "wk": 5,
-  "made": "2026-10-07T12:47+00:00",
+  "made": "2026-10-07T18:44+00:00",
   "locks": "2026-10-08T20:15:00-04:00",
-  "lines_at": "2026-10-07T12:47+00:00",
+  "lines_at": "2026-10-07T18:44+00:00",
   "src": "BFF predicted lines",
   "parlays": [
    {
@@ -87,7 +87,7 @@
    },
    {
     "type": "long",
-    "prob": 0.0757,
+    "prob": 0.0756,
     "legs": [
      {
       "pid": "00-0039739",
@@ -142,16 +142,16 @@
       "res": "pending"
      },
      {
-      "pid": "00-0038797",
-      "t": "SEA",
-      "opp": "SF",
-      "k": "ry",
-      "line": 34.5,
+      "pid": "00-0038728",
+      "t": "HOU",
+      "opp": "TEN",
+      "k": "ty",
+      "line": 17.5,
       "lean": "Over",
-      "pr": 0.5661,
+      "pr": 0.5655,
       "book": "bff",
-      "n": "Emanuel Wilson",
-      "pos": "RB",
+      "n": "Jared Wayne",
+      "pos": "WR",
       "res": "pending"
      }
     ],
