@@ -26,17 +26,11 @@ jobs:
         run: |
           python live_update.py
           python news_update.py
-      - name: Refresh real prop lines and parlay picks
-        env:
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-        run: |
-          python props_update.py
-          if [ -f bet_inputs.json ]; then python parlay_update.py; fi
       - name: Save
         run: |
           git config user.name "gridiron-fantasy-bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          for f in live.json news.json props.json parlays.json parlay_history.json; do if [ -f "$f" ]; then git add "$f"; fi; done
+          for f in live.json news.json; do if [ -f "$f" ]; then git add "$f"; fi; done
           if git diff --cached --quiet; then echo "No score changes"; exit 0; fi
           git commit -m "Live scores $(date -u +%H:%M)"
           for i in 1 2 3; do
