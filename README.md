@@ -45,11 +45,17 @@ and republishes the page for free.
 - Draft guide by pick, waiver and trade targets for most leagues, charts with correlations, a mock trade
   analyzer, betting help (prop projections, a line checker, parlay ideas; 21+, for entertainment), and tips.
 
-## Parlay tracker
-- `parlay_update.py` records each week's suggested parlays in `parlay_history.json`. They can update until
-  the week's first kickoff, then they lock, and they are graded from official box scores once games are final
-  (a leg is a hit, a miss, or void if the player did not play). See Fantasy Help > Betting help > Past wins.
-  Tracking starts with the first week this runs; earlier weeks are never filled in with hindsight.
+## Real prop lines and the parlay tracker
+- `props_update.py` pulls real player-prop lines (PrizePicks and Underdog standard lines, plus DraftKings and FanDuel)
+  from The Odds API (the-odds-api.com). Setup: get a free API key there, then in GitHub go to Settings > Secrets and
+  variables > Actions > New repository secret, name it `ODDS_API_KEY`, and paste the key.
+- Credits: one refresh of a week's slate costs about 75 credits (about 15 games x 5 stat markets). The free plan's 500
+  credits/month allow about 6 refreshes a month; the 20K plan (about $30/month) refreshes about every 3 hours. The script
+  spreads your remaining credits over the month automatically and never fails the job if the API is unreachable.
+- `parlay_update.py` builds the best 2-, 3- and 5-pick from posted lines only (no invented lines). Chances blend our
+  projection with the market's. Picks follow the lines until the week's first kickoff, then lock, and are graded from
+  official box scores (hit, miss, or void if the player did not play). See Fantasy Help > Betting help.
+- No key = no suggestions. The line checker still works with any line you type in. For entertainment, 21+ where legal.
 
 ## Trends & Matchups
 - One tab with buy/sell signals, usage risers and fallers, this week's matchups, defense vs. position,
