@@ -1,39 +1,39 @@
 {
  "5": {
   "wk": 5,
-  "made": "2026-10-07T18:44+00:00",
+  "made": "2026-10-08T00:49+00:00",
   "locks": "2026-10-08T20:15:00-04:00",
-  "lines_at": "2026-10-07T18:44+00:00",
+  "lines_at": "2026-10-08T00:49+00:00",
   "src": "BFF predicted lines",
   "parlays": [
    {
     "type": "safe",
-    "prob": 0.3761,
+    "prob": 0.3844,
     "legs": [
      {
-      "pid": "00-0039739",
-      "t": "PIT",
-      "opp": "IND",
-      "k": "rec",
-      "line": 1.5,
+      "pid": "00-0030565",
+      "t": "NYJ",
+      "opp": "CLE",
+      "k": "ptd",
+      "line": 0.5,
       "lean": "Over",
       "pr": 0.62,
       "book": "bff",
-      "n": "Roman Wilson",
-      "pos": "WR",
+      "n": "Geno Smith",
+      "pos": "QB",
       "res": "pending"
      },
      {
-      "pid": "00-0033090",
-      "t": "NE",
-      "opp": "LV",
-      "k": "rec",
-      "line": 2.5,
+      "pid": "00-0031503",
+      "t": "NYG",
+      "opp": "WAS",
+      "k": "ptd",
+      "line": 0.5,
       "lean": "Over",
-      "pr": 0.6066,
+      "pr": 0.62,
       "book": "bff",
-      "n": "Hunter Henry",
-      "pos": "TE",
+      "n": "Jameis Winston",
+      "pos": "QB",
       "res": "pending"
      }
     ],
@@ -41,8 +41,34 @@
    },
    {
     "type": "bal",
-    "prob": 0.2247,
+    "prob": 0.2383,
     "legs": [
+     {
+      "pid": "00-0030565",
+      "t": "NYJ",
+      "opp": "CLE",
+      "k": "ptd",
+      "line": 0.5,
+      "lean": "Over",
+      "pr": 0.62,
+      "book": "bff",
+      "n": "Geno Smith",
+      "pos": "QB",
+      "res": "pending"
+     },
+     {
+      "pid": "00-0031503",
+      "t": "NYG",
+      "opp": "WAS",
+      "k": "ptd",
+      "line": 0.5,
+      "lean": "Over",
+      "pr": 0.62,
+      "book": "bff",
+      "n": "Jameis Winston",
+      "pos": "QB",
+      "res": "pending"
+     },
      {
       "pid": "00-0039739",
       "t": "PIT",
@@ -54,32 +80,6 @@
       "book": "bff",
       "n": "Roman Wilson",
       "pos": "WR",
-      "res": "pending"
-     },
-     {
-      "pid": "00-0033090",
-      "t": "NE",
-      "opp": "LV",
-      "k": "rec",
-      "line": 2.5,
-      "lean": "Over",
-      "pr": 0.6066,
-      "book": "bff",
-      "n": "Hunter Henry",
-      "pos": "TE",
-      "res": "pending"
-     },
-     {
-      "pid": "00-0036355",
-      "t": "LAC",
-      "opp": "DEN",
-      "k": "ptd",
-      "line": 0.5,
-      "lean": "Over",
-      "pr": 0.5975,
-      "book": "bff",
-      "n": "Justin Herbert",
-      "pos": "QB",
       "res": "pending"
      }
     ],
@@ -87,8 +87,34 @@
    },
    {
     "type": "long",
-    "prob": 0.0756,
+    "prob": 0.0836,
     "legs": [
+     {
+      "pid": "00-0030565",
+      "t": "NYJ",
+      "opp": "CLE",
+      "k": "ptd",
+      "line": 0.5,
+      "lean": "Over",
+      "pr": 0.62,
+      "book": "bff",
+      "n": "Geno Smith",
+      "pos": "QB",
+      "res": "pending"
+     },
+     {
+      "pid": "00-0031503",
+      "t": "NYG",
+      "opp": "WAS",
+      "k": "ptd",
+      "line": 0.5,
+      "lean": "Over",
+      "pr": 0.62,
+      "book": "bff",
+      "n": "Jameis Winston",
+      "pos": "QB",
+      "res": "pending"
+     },
      {
       "pid": "00-0039739",
       "t": "PIT",
@@ -103,42 +129,16 @@
       "res": "pending"
      },
      {
-      "pid": "00-0033090",
-      "t": "NE",
-      "opp": "LV",
-      "k": "rec",
-      "line": 2.5,
-      "lean": "Over",
-      "pr": 0.6066,
-      "book": "bff",
-      "n": "Hunter Henry",
-      "pos": "TE",
-      "res": "pending"
-     },
-     {
-      "pid": "00-0036355",
+      "pid": "00-0040727",
       "t": "LAC",
       "opp": "DEN",
-      "k": "ptd",
-      "line": 0.5,
-      "lean": "Over",
-      "pr": 0.5975,
-      "book": "bff",
-      "n": "Justin Herbert",
-      "pos": "QB",
-      "res": "pending"
-     },
-     {
-      "pid": "00-0032950",
-      "t": "MIN",
-      "opp": "NO",
-      "k": "ptd",
+      "k": "rec",
       "line": 1.5,
-      "lean": "Under",
-      "pr": 0.5951,
+      "lean": "Over",
+      "pr": 0.62,
       "book": "bff",
-      "n": "Carson Wentz",
-      "pos": "QB",
+      "n": "Tre Harris",
+      "pos": "WR",
       "res": "pending"
      },
      {
